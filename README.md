@@ -7,8 +7,9 @@
 
 Um player de mídia simples, moderno e elegante construído com **HTML, CSS e JavaScript puros**. Permite que os usuários carreguem e reproduzam seus próprios arquivos de áudio e vídeo diretamente no navegador, **sem necessidade de upload ou conexão com servidor**. Tudo acontece localmente no seu dispositivo.
 
-➡️ [Veja em ação (exemplo online)](https://seu-usuario.github.io/player-de-midia-local) *(substitua pelo seu link real)*
+➡️ [Veja em ação (exemplo online)](https://jonjonesbr.github.io/Player_Midia_Local/)
 
+![Demonstração do Player de Mídia Local](https://raw.githubusercontent.com/JonJonesBR/Player_Midia_Local/refs/heads/main/Image1.png)
 ---
 
 ## ✨ Funcionalidades
@@ -120,4 +121,4 @@ Este projeto está licenciado sob a **Licença MIT** – veja o arquivo [LICENSE
 Obrigado por usar, contribuir ou apenas dar uma olhada!  
 Se este projeto foi útil para você, não se esqueça de dar uma ⭐ no repositório!
 
-Feito com ❤️ por JonJones
+Feito com ❤️ por JonJonesBR
