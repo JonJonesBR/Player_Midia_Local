@@ -33,7 +33,7 @@ Este projeto é autocontido em um único arquivo, tornando-o extremamente fácil
 1. 🔽 **Baixe o Código**  
    Clone este repositório ou baixe apenas o arquivo `index.html`:
    ```bash
-   git clone https://github.com/seu-usuario/player-de-midia-local.git
+   git clone https://github.com/JonJonesBR/Player_Midia_Local.git
    ```
 
 2. 🌐 **Abra no Navegador**  
