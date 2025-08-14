@@ -1,0 +1,1031 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Player de Mídia Local</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --background: 0 0% 100%;
+            --foreground: 222.2 84% 4.9%;
+            --card: 0 0% 100%;
+            --card-foreground: 222.2 84% 4.9%;
+            --popover: 0 0% 100%;
+            --popover-foreground: 222.2 84% 4.9%;
+            --primary: 221.2 83.2% 53.3%;
+            --primary-foreground: 210 40% 98%;
+            --secondary: 210 40% 96%;
+            --secondary-foreground: 222.2 84% 4.9%;
+            --muted: 210 40% 96%;
+            --muted-foreground: 215.4 16.3% 46.9%;
+            --accent: 210 40% 96%;
+            --accent-foreground: 222.2 84% 4.9%;
+            --destructive: 0 84.2% 60.2%;
+            --destructive-foreground: 210 40% 98%;
+            --border: 214.3 31.8% 91.4%;
+            --input: 214.3 31.8% 91.4%;
+            --ring: 221.2 83.2% 53.3%;
+            --radius: 0.5rem;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: hsl(var(--background));
+            color: hsl(var(--foreground));
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+
+        .header p {
+            color: hsl(var(--muted-foreground));
+            font-size: 1.1rem;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1.5rem;
+        }
+
+        @media (min-width: 1024px) {
+            .grid {
+                grid-template-columns: 2fr 1fr;
+            }
+        }
+
+        .card {
+            background: hsl(var(--card));
+            border: 1px solid hsl(var(--border));
+            border-radius: var(--radius);
+            overflow: hidden;
+        }
+
+        .card-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid hsl(var(--border));
+        }
+
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .card-content {
+            padding: 1.5rem;
+        }
+
+        .media-area {
+            background: black;
+            border-radius: 0.5rem;
+            overflow: hidden;
+            aspect-video: 16 / 9;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .media-area video {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .media-placeholder {
+            color: white;
+            text-align: center;
+        }
+
+        .media-placeholder svg {
+            width: 4rem;
+            height: 4rem;
+            margin: 0 auto 1rem;
+            opacity: 0.7;
+        }
+
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .time-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .time-display {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.875rem;
+            color: hsl(var(--muted-foreground));
+        }
+
+        .slider {
+            width: 100%;
+            height: 1.5rem;
+            position: relative;
+            cursor: pointer;
+        }
+
+        .slider-track {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 100%;
+            height: 0.25rem;
+            background: hsl(var(--muted));
+            border-radius: 9999px;
+        }
+
+        .slider-fill {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            height: 0.25rem;
+            background: hsl(var(--primary));
+            border-radius: 9999px;
+            transition: width 0.1s;
+        }
+
+        .slider-thumb {
+            position: absolute;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            width: 1rem;
+            height: 1rem;
+            background: hsl(var(--primary));
+            border-radius: 50%;
+            cursor: grab;
+            transition: all 0.1s;
+        }
+
+        .slider-thumb:hover {
+            transform: translate(-50%, -50%) scale(1.1);
+        }
+
+        .slider-thumb:active {
+            cursor: grabbing;
+        }
+
+        .playback-controls {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+        }
+
+        .volume-controls {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            border-radius: 0.375rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            border: 1px solid hsl(var(--border));
+            background: hsl(var(--background));
+            color: hsl(var(--foreground));
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn:hover {
+            background: hsl(var(--muted));
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-icon {
+            width: 2.5rem;
+            height: 2.5rem;
+            padding: 0;
+        }
+
+        .btn-primary {
+            background: hsl(var(--primary));
+            color: hsl(var(--primary-foreground));
+            border-color: hsl(var(--primary));
+        }
+
+        .btn-primary:hover {
+            background: hsl(var(--primary) / 0.9);
+        }
+
+        .btn-ghost {
+            background: transparent;
+            border: none;
+        }
+
+        .btn-ghost:hover {
+            background: hsl(var(--muted));
+        }
+
+        .file-upload {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .file-upload label {
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .file-upload input[type="file"] {
+            padding: 0.5rem;
+            border: 1px solid hsl(var(--border));
+            border-radius: 0.375rem;
+            background: hsl(var(--background));
+            cursor: pointer;
+        }
+
+        .playlist {
+            height: 24rem;
+            overflow-y: auto;
+        }
+
+        .playlist-empty {
+            text-align: center;
+            color: hsl(var(--muted-foreground));
+            padding: 2rem;
+        }
+
+        .playlist-empty svg {
+            width: 3rem;
+            height: 3rem;
+            margin: 0 auto 1rem;
+            opacity: 0.5;
+        }
+
+        .playlist-item {
+            padding: 0.75rem;
+            border: 1px solid hsl(var(--border));
+            border-radius: 0.375rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-bottom: 0.5rem;
+        }
+
+        .playlist-item:hover {
+            background: hsl(var(--muted));
+        }
+
+        .playlist-item.active {
+            background: hsl(var(--primary));
+            color: hsl(var(--primary-foreground));
+            border-color: hsl(var(--primary));
+        }
+
+        .playlist-item-content {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.75rem;
+        }
+
+        .playlist-item-info {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            flex: 1;
+            min-width: 0;
+        }
+
+        .playlist-item-icon {
+            flex-shrink: 0;
+        }
+
+        .playlist-item-details {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .playlist-item-name {
+            font-size: 0.875rem;
+            font-weight: 500;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .playlist-item-type {
+            font-size: 0.75rem;
+            opacity: 0.7;
+        }
+
+        .playlist-item-remove {
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .playlist-item:hover .playlist-item-remove {
+            opacity: 1;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.25rem 0.5rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            background: hsl(var(--secondary));
+            color: hsl(var(--secondary-foreground));
+        }
+
+        .icon {
+            width: 1.25rem;
+            height: 1.25rem;
+        }
+
+        .icon-lg {
+            width: 1.5rem;
+            height: 1.5rem;
+        }
+
+        /* Scrollbar styling */
+        .playlist::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .playlist::-webkit-scrollbar-track {
+            background: hsl(var(--muted));
+            border-radius: 3px;
+        }
+
+        .playlist::-webkit-scrollbar-thumb {
+            background: hsl(var(--muted-foreground));
+            border-radius: 3px;
+        }
+
+        .playlist::-webkit-scrollbar-thumb:hover {
+            background: hsl(var(--foreground));
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Player de Mídia Local</h1>
+            <p>Carregue e reproduza seus arquivos de áudio e vídeo</p>
+        </div>
+
+        <div class="grid">
+            <!-- Player Principal -->
+            <div>
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <svg class="icon" id="current-media-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M9 18V5l12-2v13"></path>
+                                <circle cx="6" cy="18" r="3"></circle>
+                                <circle cx="18" cy="16" r="3"></circle>
+                            </svg>
+                            <span id="current-media-name">Nenhuma mídia selecionada</span>
+                        </div>
+                    </div>
+                    <div class="card-content">
+                        <div class="controls">
+                            <!-- Área de Mídia -->
+                            <div class="media-area" id="media-area">
+                                <div class="media-placeholder">
+                                    <svg class="icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M9 18V5l12-2v13"></path>
+                                        <circle cx="6" cy="18" r="3"></circle>
+                                        <circle cx="18" cy="16" r="3"></circle>
+                                    </svg>
+                                    <p>Selecione uma mídia para reproduzir</p>
+                                </div>
+                            </div>
+
+                            <!-- Elementos de mídia ocultos -->
+                            <audio id="audio-element"></audio>
+                            <video id="video-element" style="display: none;"></video>
+
+                            <!-- Controles de Tempo -->
+                            <div class="time-controls">
+                                <div class="time-display">
+                                    <span id="current-time">0:00</span>
+                                    <span id="duration">0:00</span>
+                                </div>
+                                <div class="slider" id="time-slider">
+                                    <div class="slider-track"></div>
+                                    <div class="slider-fill" id="time-fill"></div>
+                                    <div class="slider-thumb" id="time-thumb"></div>
+                                </div>
+                            </div>
+
+                            <!-- Controles de Reprodução -->
+                            <div class="playback-controls">
+                                <button class="btn btn-icon btn-outline" id="prev-btn" disabled>
+                                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <polygon points="19 20 9 12 19 4 19 20"></polygon>
+                                        <line x1="5" y1="19" x2="5" y2="5"></line>
+                                    </svg>
+                                </button>
+                                <button class="btn btn-icon btn-primary" id="play-pause-btn" disabled>
+                                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" id="play-icon">
+                                        <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                                    </svg>
+                                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" id="pause-icon" style="display: none;">
+                                        <rect x="6" y="4" width="4" height="16"></rect>
+                                        <rect x="14" y="4" width="4" height="16"></rect>
+                                    </svg>
+                                </button>
+                                <button class="btn btn-icon btn-outline" id="stop-btn" disabled>
+                                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                                    </svg>
+                                </button>
+                                <button class="btn btn-icon btn-outline" id="next-btn" disabled>
+                                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <polygon points="5 4 15 12 5 20 5 4"></polygon>
+                                        <line x1="19" y1="5" x2="19" y2="19"></line>
+                                    </svg>
+                                </button>
+                            </div>
+
+                            <!-- Controles de Volume -->
+                            <div class="volume-controls">
+                                <button class="btn btn-icon btn-ghost" id="mute-btn">
+                                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" id="volume-icon">
+                                        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                                        <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                                    </svg>
+                                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" id="mute-icon" style="display: none;">
+                                        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                                        <line x1="23" y1="9" x2="17" y2="15"></line>
+                                        <line x1="17" y1="9" x2="23" y2="15"></line>
+                                    </svg>
+                                </button>
+                                <div class="slider" id="volume-slider" style="flex: 1;">
+                                    <div class="slider-track"></div>
+                                    <div class="slider-fill" id="volume-fill"></div>
+                                    <div class="slider-thumb" id="volume-thumb"></div>
+                                </div>
+                            </div>
+
+                            <!-- Upload de Arquivos -->
+                            <div class="file-upload">
+                                <label for="file-upload">Carregar Arquivos de Mídia</label>
+                                <input type="file" id="file-upload" accept="audio/*,video/*" multiple>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Playlist -->
+            <div>
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <div style="display: flex; align-items: center; gap: 0.5rem; flex: 1;">
+                                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <line x1="8" y1="6" x2="21" y2="6"></line>
+                                    <line x1="8" y1="12" x2="21" y2="12"></line>
+                                    <line x1="8" y1="18" x2="21" y2="18"></line>
+                                    <line x1="3" y1="6" x2="3.01" y2="6"></line>
+                                    <line x1="3" y1="12" x2="3.01" y2="12"></line>
+                                    <line x1="3" y1="18" x2="3.01" y2="18"></line>
+                                </svg>
+                                Playlist
+                            </div>
+                            <span class="badge" id="playlist-count">0 arquivos</span>
+                        </div>
+                    </div>
+                    <div class="card-content">
+                        <div class="playlist" id="playlist">
+                            <div class="playlist-empty">
+                                <svg class="icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M9 18V5l12-2v13"></path>
+                                    <circle cx="6" cy="18" r="3"></circle>
+                                    <circle cx="18" cy="16" r="3"></circle>
+                                </svg>
+                                <p>Nenhum arquivo na playlist</p>
+                                <p style="font-size: 0.875rem;">Carregue arquivos para começar</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class MediaPlayer {
+            constructor() {
+                this.mediaFiles = [];
+                this.currentMediaIndex = -1;
+                this.isPlaying = false;
+                this.currentTime = 0;
+                this.duration = 0;
+                this.volume = 1;
+                this.isMuted = false;
+                
+                this.audioElement = document.getElementById('audio-element');
+                this.videoElement = document.getElementById('video-element');
+                this.mediaArea = document.getElementById('media-area');
+                
+                this.initializeElements();
+                this.bindEvents();
+                this.updateUI();
+            }
+
+            initializeElements() {
+                // Controles
+                this.playPauseBtn = document.getElementById('play-pause-btn');
+                this.stopBtn = document.getElementById('stop-btn');
+                this.prevBtn = document.getElementById('prev-btn');
+                this.nextBtn = document.getElementById('next-btn');
+                this.muteBtn = document.getElementById('mute-btn');
+                
+                // Sliders
+                this.timeSlider = document.getElementById('time-slider');
+                this.volumeSlider = document.getElementById('volume-slider');
+                
+                // Displays
+                this.currentTimeDisplay = document.getElementById('current-time');
+                this.durationDisplay = document.getElementById('duration');
+                this.currentMediaName = document.getElementById('current-media-name');
+                this.currentMediaIcon = document.getElementById('current-media-icon');
+                this.playlistCount = document.getElementById('playlist-count');
+                this.playlist = document.getElementById('playlist');
+                
+                // Icons
+                this.playIcon = document.getElementById('play-icon');
+                this.pauseIcon = document.getElementById('pause-icon');
+                this.volumeIcon = document.getElementById('volume-icon');
+                this.muteIcon = document.getElementById('mute-icon');
+                
+                // Slider elements
+                this.timeFill = document.getElementById('time-fill');
+                this.timeThumb = document.getElementById('time-thumb');
+                this.volumeFill = document.getElementById('volume-fill');
+                this.volumeThumb = document.getElementById('volume-thumb');
+            }
+
+            bindEvents() {
+                // File upload
+                document.getElementById('file-upload').addEventListener('change', (e) => this.handleFileUpload(e));
+                
+                // Playback controls
+                this.playPauseBtn.addEventListener('click', () => this.togglePlayPause());
+                this.stopBtn.addEventListener('click', () => this.stopMedia());
+                this.prevBtn.addEventListener('click', () => this.playPrevious());
+                this.nextBtn.addEventListener('click', () => this.playNext());
+                this.muteBtn.addEventListener('click', () => this.toggleMute());
+                
+                // Media events
+                this.audioElement.addEventListener('timeupdate', () => this.updateTime());
+                this.audioElement.addEventListener('loadedmetadata', () => this.updateDuration());
+                this.audioElement.addEventListener('ended', () => this.onMediaEnded());
+                
+                this.videoElement.addEventListener('timeupdate', () => this.updateTime());
+                this.videoElement.addEventListener('loadedmetadata', () => this.updateDuration());
+                this.videoElement.addEventListener('ended', () => this.onMediaEnded());
+                
+                // Slider events
+                this.bindSliderEvents(this.timeSlider, (value) => this.setTime(value));
+                this.bindSliderEvents(this.volumeSlider, (value) => this.setVolume(value));
+            }
+
+            bindSliderEvents(slider, onChange) {
+                let isDragging = false;
+                
+                const updateValue = (clientX) => {
+                    const rect = slider.getBoundingClientRect();
+                    const percent = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+                    onChange(percent);
+                };
+                
+                slider.addEventListener('mousedown', (e) => {
+                    isDragging = true;
+                    updateValue(e.clientX);
+                });
+                
+                document.addEventListener('mousemove', (e) => {
+                    if (isDragging) {
+                        updateValue(e.clientX);
+                    }
+                });
+                
+                document.addEventListener('mouseup', () => {
+                    isDragging = false;
+                });
+                
+                slider.addEventListener('click', (e) => {
+                    if (!isDragging) {
+                        updateValue(e.clientX);
+                    }
+                });
+            }
+
+            handleFileUpload(event) {
+                const files = Array.from(event.target.files);
+                
+                files.forEach(file => {
+                    const url = URL.createObjectURL(file);
+                    const type = file.type.startsWith('audio/') ? 'audio' : 'video';
+                    
+                    const mediaFile = {
+                        file,
+                        url,
+                        name: file.name,
+                        type
+                    };
+                    
+                    this.mediaFiles.push(mediaFile);
+                });
+                
+                this.updatePlaylist();
+                this.updateUI();
+                
+                // Auto-play first file if no media is playing
+                if (this.currentMediaIndex === -1 && this.mediaFiles.length > 0) {
+                    this.playMedia(0);
+                }
+            }
+
+            playMedia(index) {
+                if (index < 0 || index >= this.mediaFiles.length) return;
+                
+                this.currentMediaIndex = index;
+                const media = this.mediaFiles[index];
+                
+                // Stop current media
+                this.stopMedia();
+                
+                // Set up new media
+                if (media.type === 'audio') {
+                    this.audioElement.src = media.url;
+                    this.updateMediaArea('audio');
+                } else {
+                    this.videoElement.src = media.url;
+                    this.updateMediaArea('video');
+                }
+                
+                // Update UI
+                this.currentMediaName.textContent = media.name;
+                this.updateCurrentMediaIcon(media.type);
+                this.updateUI();
+                
+                // Auto-play after a short delay
+                setTimeout(() => {
+                    const mediaElement = media.type === 'audio' ? this.audioElement : this.videoElement;
+                    if (mediaElement) {
+                        mediaElement.play()
+                            .then(() => {
+                                this.isPlaying = true;
+                                this.updatePlayPauseButton();
+                            })
+                            .catch(error => {
+                                console.error('Erro ao reproduzir mídia:', error);
+                                this.isPlaying = false;
+                                this.updatePlayPauseButton();
+                            });
+                    }
+                }, 100);
+            }
+
+            updateMediaArea(type) {
+                if (type === 'video') {
+                    this.mediaArea.innerHTML = '';
+                    this.mediaArea.appendChild(this.videoElement);
+                    this.videoElement.style.display = 'block';
+                } else {
+                    this.mediaArea.innerHTML = `
+                        <div class="media-placeholder">
+                            <svg class="icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M9 18V5l12-2v13"></path>
+                                <circle cx="6" cy="18" r="3"></circle>
+                                <circle cx="18" cy="16" r="3"></circle>
+                            </svg>
+                            <p>Reproduzindo áudio</p>
+                        </div>
+                    `;
+                }
+            }
+
+            updateCurrentMediaIcon(type) {
+                if (type === 'audio') {
+                    this.currentMediaIcon.innerHTML = `
+                        <path d="M9 18V5l12-2v13"></path>
+                        <circle cx="6" cy="18" r="3"></circle>
+                        <circle cx="18" cy="16" r="3"></circle>
+                    `;
+                } else {
+                    this.currentMediaIcon.innerHTML = `
+                        <polygon points="23 7 16 12 23 17 23 7"></polygon>
+                        <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
+                    `;
+                }
+            }
+
+            togglePlayPause() {
+                if (this.currentMediaIndex === -1) return;
+                
+                const media = this.mediaFiles[this.currentMediaIndex];
+                const mediaElement = media.type === 'audio' ? this.audioElement : this.videoElement;
+                
+                if (!mediaElement) return;
+                
+                if (this.isPlaying) {
+                    mediaElement.pause();
+                    this.isPlaying = false;
+                } else {
+                    mediaElement.play()
+                        .then(() => {
+                            this.isPlaying = true;
+                        })
+                        .catch(error => {
+                            console.error('Erro ao reproduzir mídia:', error);
+                            this.isPlaying = false;
+                        });
+                }
+                
+                this.updatePlayPauseButton();
+            }
+
+            updatePlayPauseButton() {
+                if (this.isPlaying) {
+                    this.playIcon.style.display = 'none';
+                    this.pauseIcon.style.display = 'block';
+                } else {
+                    this.playIcon.style.display = 'block';
+                    this.pauseIcon.style.display = 'none';
+                }
+            }
+
+            stopMedia() {
+                const media = this.currentMediaIndex >= 0 ? this.mediaFiles[this.currentMediaIndex] : null;
+                if (!media) return;
+                
+                const mediaElement = media.type === 'audio' ? this.audioElement : this.videoElement;
+                if (!mediaElement) return;
+                
+                mediaElement.pause();
+                mediaElement.currentTime = 0;
+                this.isPlaying = false;
+                this.updatePlayPauseButton();
+                this.currentTime = 0;
+                this.updateTimeDisplay();
+            }
+
+            playPrevious() {
+                if (this.mediaFiles.length === 0) return;
+                const newIndex = this.currentMediaIndex > 0 ? this.currentMediaIndex - 1 : this.mediaFiles.length - 1;
+                this.playMedia(newIndex);
+            }
+
+            playNext() {
+                if (this.mediaFiles.length === 0) return;
+                const newIndex = this.currentMediaIndex < this.mediaFiles.length - 1 ? this.currentMediaIndex + 1 : 0;
+                this.playMedia(newIndex);
+            }
+
+            onMediaEnded() {
+                this.isPlaying = false;
+                this.updatePlayPauseButton();
+                this.playNext();
+            }
+
+            setTime(percent) {
+                if (this.currentMediaIndex === -1) return;
+                
+                const media = this.mediaFiles[this.currentMediaIndex];
+                const mediaElement = media.type === 'audio' ? this.audioElement : this.videoElement;
+                
+                if (mediaElement && this.duration > 0) {
+                    mediaElement.currentTime = percent * this.duration;
+                }
+            }
+
+            setVolume(percent) {
+                this.volume = Math.max(0, Math.min(1, percent));
+                this.isMuted = this.volume === 0;
+                
+                this.audioElement.volume = this.volume;
+                this.videoElement.volume = this.volume;
+                
+                this.updateVolumeDisplay();
+                this.updateMuteButton();
+            }
+
+            toggleMute() {
+                this.isMuted = !this.isMuted;
+                
+                const volume = this.isMuted ? 0 : this.volume;
+                this.audioElement.volume = volume;
+                this.videoElement.volume = volume;
+                
+                this.updateVolumeDisplay();
+                this.updateMuteButton();
+            }
+
+            updateTime() {
+                if (this.currentMediaIndex === -1) return;
+                
+                const media = this.mediaFiles[this.currentMediaIndex];
+                const mediaElement = media.type === 'audio' ? this.audioElement : this.videoElement;
+                
+                if (mediaElement) {
+                    this.currentTime = mediaElement.currentTime;
+                    this.updateTimeDisplay();
+                    this.updateTimeSlider();
+                }
+            }
+
+            updateDuration() {
+                if (this.currentMediaIndex === -1) return;
+                
+                const media = this.mediaFiles[this.currentMediaIndex];
+                const mediaElement = media.type === 'audio' ? this.audioElement : this.videoElement;
+                
+                if (mediaElement && !isNaN(mediaElement.duration)) {
+                    this.duration = mediaElement.duration;
+                    this.updateTimeDisplay();
+                }
+            }
+
+            updateTimeDisplay() {
+                this.currentTimeDisplay.textContent = this.formatTime(this.currentTime);
+                this.durationDisplay.textContent = this.formatTime(this.duration);
+            }
+
+            updateTimeSlider() {
+                if (this.duration > 0) {
+                    const percent = this.currentTime / this.duration;
+                    this.timeFill.style.width = `${percent * 100}%`;
+                    this.timeThumb.style.left = `${percent * 100}%`;
+                }
+            }
+
+            updateVolumeDisplay() {
+                const displayVolume = this.isMuted ? 0 : this.volume;
+                this.volumeFill.style.width = `${displayVolume * 100}%`;
+                this.volumeThumb.style.left = `${displayVolume * 100}%`;
+            }
+
+            updateMuteButton() {
+                if (this.isMuted) {
+                    this.volumeIcon.style.display = 'none';
+                    this.muteIcon.style.display = 'block';
+                } else {
+                    this.volumeIcon.style.display = 'block';
+                    this.muteIcon.style.display = 'none';
+                }
+            }
+
+            formatTime(seconds) {
+                if (isNaN(seconds)) return '0:00';
+                
+                const minutes = Math.floor(seconds / 60);
+                const secs = Math.floor(seconds % 60);
+                return `${minutes}:${secs.toString().padStart(2, '0')}`;
+            }
+
+            updatePlaylist() {
+                if (this.mediaFiles.length === 0) {
+                    this.playlist.innerHTML = `
+                        <div class="playlist-empty">
+                            <svg class="icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M9 18V5l12-2v13"></path>
+                                <circle cx="6" cy="18" r="3"></circle>
+                                <circle cx="18" cy="16" r="3"></circle>
+                            </svg>
+                            <p>Nenhum arquivo na playlist</p>
+                            <p style="font-size: 0.875rem;">Carregue arquivos para começar</p>
+                        </div>
+                    `;
+                } else {
+                    this.playlist.innerHTML = this.mediaFiles.map((media, index) => `
+                        <div class="playlist-item ${index === this.currentMediaIndex ? 'active' : ''}" data-index="${index}">
+                            <div class="playlist-item-content">
+                                <div class="playlist-item-info">
+                                    <div class="playlist-item-icon">
+                                        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            ${media.type === 'audio' ? 
+                                                '<path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle>' :
+                                                '<polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>'
+                                            }
+                                        </svg>
+                                    </div>
+                                    <div class="playlist-item-details">
+                                        <div class="playlist-item-name">${media.name}</div>
+                                        <div class="playlist-item-type">${media.type.toUpperCase()}</div>
+                                    </div>
+                                </div>
+                                <button class="btn btn-icon btn-ghost playlist-item-remove" data-index="${index}">
+                                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                    `).join('');
+                    
+                    // Bind playlist item events
+                    this.playlist.querySelectorAll('.playlist-item').forEach(item => {
+                        item.addEventListener('click', (e) => {
+                            if (!e.target.closest('.playlist-item-remove')) {
+                                const index = parseInt(item.dataset.index);
+                                this.playMedia(index);
+                            }
+                        });
+                    });
+                    
+                    // Bind remove button events
+                    this.playlist.querySelectorAll('.playlist-item-remove').forEach(btn => {
+                        btn.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            const index = parseInt(btn.dataset.index);
+                            this.removeMedia(index);
+                        });
+                    });
+                }
+                
+                this.playlistCount.textContent = `${this.mediaFiles.length} arquivos`;
+            }
+
+            removeMedia(index) {
+                const mediaToRemove = this.mediaFiles[index];
+                URL.revokeObjectURL(mediaToRemove.url);
+                
+                this.mediaFiles.splice(index, 1);
+                
+                if (index === this.currentMediaIndex) {
+                    this.stopMedia();
+                    this.currentMediaIndex = -1;
+                    this.currentMediaName.textContent = 'Nenhuma mídia selecionada';
+                    this.updateMediaArea('none');
+                } else if (index < this.currentMediaIndex) {
+                    this.currentMediaIndex--;
+                }
+                
+                this.updatePlaylist();
+                this.updateUI();
+            }
+
+            updateUI() {
+                // Update button states
+                const hasMedia = this.mediaFiles.length > 0;
+                const hasCurrentMedia = this.currentMediaIndex >= 0;
+                
+                this.playPauseBtn.disabled = !hasCurrentMedia;
+                this.stopBtn.disabled = !hasCurrentMedia;
+                this.prevBtn.disabled = !hasMedia;
+                this.nextBtn.disabled = !hasMedia;
+                
+                // Initialize volume display
+                this.updateVolumeDisplay();
+                this.updateMuteButton();
+            }
+        }
+
+        // Initialize the media player when the page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            new MediaPlayer();
+        });
+    </script>
+</body>
+</html>
